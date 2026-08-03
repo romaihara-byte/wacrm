@@ -8,13 +8,14 @@ export function SupabaseHealthBanner() {
   useEffect(() => {
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
     if (!url) return;
+    const healthUrl = url;
 
     let cancelled = false;
 
     async function check() {
       try {
         // Use no-cors to avoid CORS failures; network-level errors still throw.
-        await fetch(url, { method: "GET", mode: "no-cors" });
+        await fetch(healthUrl, { method: "GET", mode: "no-cors" });
         if (!cancelled) setDown(false);
       } catch (err) {
         if (!cancelled) setDown(true);
