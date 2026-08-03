@@ -48,13 +48,24 @@ function LoginPageInner() {
     setError(null);
     setLoading(true);
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
 
-    if (error) {
-      setError(error.message);
+      if (error) {
+        setError(
+          `Não foi possível conectar ao serviço de autenticação (${error.message}). Verifique NEXT_PUBLIC_SUPABASE_URL em .env.local e a sua conexão de rede.`
+        );
+        setLoading(false);
+        return;
+      }
+    } catch (err: any) {
+      // Network-level errors (DNS, connectivity) surface as thrown TypeError
+      setError(
+        'Não foi possível conectar ao serviço de autenticação. Verifique `NEXT_PUBLIC_SUPABASE_URL` em .env.local e a sua conexão de rede.'
+      );
       setLoading(false);
       return;
     }

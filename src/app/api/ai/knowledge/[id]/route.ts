@@ -8,6 +8,7 @@ import { checkRateLimit, rateLimitResponse, RATE_LIMITS } from '@/lib/rate-limit
 import { loadEmbeddingsKey } from '@/lib/ai/config'
 import { ingestDocument } from '@/lib/ai/knowledge'
 import { AiError } from '@/lib/ai/types'
+import { isMissingAiSchemaError } from '@/lib/ai/schema'
 
 type Params = { params: Promise<{ id: string }> }
 
@@ -25,6 +26,10 @@ export async function GET(_request: Request, { params }: Params) {
       .eq('id', id)
       .maybeSingle()
     if (error) {
+      if (isMissingAiSchemaError(error)) {
+        console.warn('[ai/knowledge/[id] GET] AI schema not available yet')
+        return NextResponse.json({ error: 'AI knowledge base is not available yet' }, { status: 503 })
+      }
       console.error('[ai/knowledge/[id] GET] error:', error)
       return NextResponse.json({ error: 'Failed to load document' }, { status: 500 })
     }
@@ -71,6 +76,10 @@ export async function PATCH(request: Request, { params }: Params) {
       .select('id')
       .maybeSingle()
     if (error) {
+      if (isMissingAiSchemaError(error)) {
+        console.warn('[ai/knowledge/[id] PATCH] AI schema not available yet')
+        return NextResponse.json({ error: 'AI knowledge base is not available yet' }, { status: 503 })
+      }
       console.error('[ai/knowledge/[id] PATCH] error:', error)
       return NextResponse.json({ error: 'Failed to update document' }, { status: 500 })
     }
@@ -122,6 +131,10 @@ export async function DELETE(_request: Request, { params }: Params) {
       .eq('account_id', accountId)
       .eq('id', id)
     if (error) {
+      if (isMissingAiSchemaError(error)) {
+        console.warn('[ai/knowledge/[id] DELETE] AI schema not available yet')
+        return NextResponse.json({ error: 'AI knowledge base is not available yet' }, { status: 503 })
+      }
       console.error('[ai/knowledge/[id] DELETE] error:', error)
       return NextResponse.json({ error: 'Failed to delete document' }, { status: 500 })
     }

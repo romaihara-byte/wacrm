@@ -4,6 +4,7 @@ import { checkRateLimit, rateLimitResponse, RATE_LIMITS } from '@/lib/rate-limit
 import { decrypt } from '@/lib/whatsapp/encryption'
 import { validateAiCredentials } from '@/lib/ai/validate'
 import { AiError, type AiProvider } from '@/lib/ai/types'
+import { isMissingAiSchemaError } from '@/lib/ai/schema'
 
 /**
  * POST /api/ai/test  (admin+)
@@ -41,11 +42,20 @@ export async function POST(request: Request) {
     const rawKey = typeof body.api_key === 'string' ? body.api_key.trim() : ''
     let apiKeyPlain = rawKey
     if (!apiKeyPlain) {
-      const { data: existing } = await supabase
+      const { data: existing, error } = await supabase
         .from('ai_configs')
         .select('api_key')
         .eq('account_id', accountId)
         .maybeSingle()
+      if (error) {
+        if (isMissingAiSchemaError(error)) {
+          return NextResponse.json(
+            { error: 'AI settings tables are not available yet. Apply the AI migrations first.' },
+            { status: 503 },
+          )
+        }
+        throw error
+      }
       if (!existing?.api_key) {
         return NextResponse.json(
           { error: 'Enter an API key to test.' },

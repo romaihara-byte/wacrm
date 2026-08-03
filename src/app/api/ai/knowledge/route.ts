@@ -8,6 +8,7 @@ import { checkRateLimit, rateLimitResponse, RATE_LIMITS } from '@/lib/rate-limit
 import { loadEmbeddingsKey } from '@/lib/ai/config'
 import { ingestDocument } from '@/lib/ai/knowledge'
 import { AiError } from '@/lib/ai/types'
+import { isMissingAiSchemaError } from '@/lib/ai/schema'
 
 /**
  * GET /api/ai/knowledge
@@ -23,6 +24,10 @@ export async function GET() {
       .eq('account_id', accountId)
       .order('updated_at', { ascending: false })
     if (error) {
+      if (isMissingAiSchemaError(error)) {
+        console.warn('[ai/knowledge GET] AI schema not available yet; returning empty list')
+        return NextResponse.json({ documents: [], pending_schema: true })
+      }
       console.error('[ai/knowledge GET] error:', error)
       return NextResponse.json(
         { error: 'Failed to load knowledge base' },
@@ -63,6 +68,13 @@ export async function POST(request: Request) {
       .select('id')
       .single()
     if (error || !doc) {
+      if (isMissingAiSchemaError(error)) {
+        console.warn('[ai/knowledge POST] AI schema not available yet; rejecting save until schema exists')
+        return NextResponse.json(
+          { error: 'AI knowledge base tables are not available yet. Apply the AI migrations first.' },
+          { status: 503 },
+        )
+      }
       console.error('[ai/knowledge POST] insert error:', error)
       return NextResponse.json(
         { error: 'Failed to save document' },

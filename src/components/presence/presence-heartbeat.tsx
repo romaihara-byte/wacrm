@@ -22,6 +22,11 @@ import { HEARTBEAT_MS, IDLE_AFTER_MS, type StoredPresence } from "@/lib/presence
 export function PresenceHeartbeat() {
   const { accountId } = useAuth();
 
+  // Allow temporarily disabling the client heartbeat from environment.
+  // Set NEXT_PUBLIC_DISABLE_PRESENCE_HEARTBEAT=true in .env.local to disable.
+  const disableHeartbeat = process.env.NEXT_PUBLIC_DISABLE_PRESENCE_HEARTBEAT === 'true';
+  if (disableHeartbeat) return null;
+
   // 0 = "never recorded"; set on mount so we don't read the clock during
   // render (impure). Until the effect runs the tab counts as active.
   const lastActivityRef = useRef<number>(0);
@@ -61,8 +66,9 @@ export function PresenceHeartbeat() {
       });
       if (error && !cancelled) {
         // Non-fatal: presence is best-effort. Log once per failure so a
-        // misconfigured RPC is visible without spamming.
-        console.error("[PresenceHeartbeat] touch_presence failed:", error.message);
+        // misconfigured RPC is visible without spamming. Log the full
+        // error object (not just `message`) to aid CORS/network debugging.
+        console.error("[PresenceHeartbeat] touch_presence failed:", error);
       }
     };
 

@@ -237,12 +237,23 @@ export function TagManager() {
                 onClick={handleCreate}
                 disabled={saving || !newTagName.trim()}
               >
-                {saving ? (
-                  <Loader2 className="size-4 animate-spin" />
-                ) : (
-                  <Plus className="size-4" />
-                )}
-                Add tag
+                <span className="inline-flex items-center gap-2">
+                  <Loader2
+                    className={cn(
+                      'size-4 transition-opacity',
+                      saving ? 'opacity-100' : 'opacity-0',
+                    )}
+                  />
+                  <Plus
+                    className={cn(
+                      'size-4 transition-opacity',
+                      saving ? 'opacity-0' : 'opacity-100',
+                    )}
+                  />
+                  <span className={saving ? 'opacity-50' : 'opacity-100'}>
+                    Add tag
+                  </span>
+                </span>
               </Button>
             </div>
           </>
@@ -272,14 +283,17 @@ export function TagManager() {
               onClick={handleDelete}
               disabled={deleting}
             >
-              {deleting ? (
-                <>
-                  <Loader2 className="size-4 animate-spin" />
-                  Deleting...
-                </>
-              ) : (
-                'Delete tag'
-              )}
+              <span className="inline-flex items-center gap-2">
+                <Loader2
+                  className={cn(
+                    'size-4 transition-opacity',
+                    deleting ? 'opacity-100' : 'opacity-0',
+                  )}
+                />
+                <span className={deleting ? 'opacity-50' : 'opacity-100'}>
+                  Delete tag
+                </span>
+              </span>
             </Button>
           </DialogFooter>
         </DialogContent>

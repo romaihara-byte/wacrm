@@ -9,6 +9,7 @@ import { encrypt, decrypt } from '@/lib/whatsapp/encryption'
 import { validateAiCredentials } from '@/lib/ai/validate'
 import { embedTexts } from '@/lib/ai/embeddings'
 import { AiError, type AiProvider } from '@/lib/ai/types'
+import { isMissingAiSchemaError } from '@/lib/ai/schema'
 
 function bad(message: string) {
   return NextResponse.json({ error: message }, { status: 400 })
@@ -36,6 +37,10 @@ export async function GET() {
       .maybeSingle()
 
     if (error) {
+      if (isMissingAiSchemaError(error)) {
+        console.warn('[ai/config GET] AI schema not available yet; returning empty config')
+        return NextResponse.json({ configured: false, pending_schema: true })
+      }
       console.error('[ai/config GET] fetch error:', error)
       return NextResponse.json(
         { error: 'Failed to load AI configuration' },
