@@ -111,3 +111,111 @@ describe("middleware — refreshed auth cookies survive redirects", () => {
     expect(res.cookies.get(ROTATED.name)?.value).toBe(ROTATED.value);
   });
 });
+
+describe("middleware — same-origin API protection", () => {
+  it("blocks cross-origin POST to a session API route", async () => {
+    mockUser = { id: "user-1" };
+
+    const res = await middleware(
+      new NextRequest("https://app.test/api/account", {
+        method: "POST",
+        headers: { origin: "https://evil.example" },
+      }),
+    );
+
+    const body = await res.json();
+    expect(res.status).toBe(403);
+    expect(body).toEqual({ error: "Forbidden" });
+  });
+
+  it("allows same-origin POST via Origin", async () => {
+    mockUser = { id: "user-1" };
+
+    const res = await middleware(
+      new NextRequest("https://app.test/api/account", {
+        method: "POST",
+        headers: { origin: "https://app.test" },
+      }),
+    );
+
+    expect(res.status).not.toBe(403);
+  });
+
+  it("allows same-origin POST via Referer fallback", async () => {
+    mockUser = { id: "user-1" };
+
+    const res = await middleware(
+      new NextRequest("https://app.test/api/account", {
+        method: "POST",
+        headers: { referer: "https://app.test/dashboard" },
+      }),
+    );
+
+    expect(res.status).not.toBe(403);
+  });
+
+  it("blocks unsafe session API request when Origin and Referer are missing", async () => {
+    mockUser = { id: "user-1" };
+
+    const res = await middleware(
+      new NextRequest("https://app.test/api/account", {
+        method: "POST",
+      }),
+    );
+
+    expect(res.status).toBe(403);
+  });
+
+  it("does not block excluded webhook route", async () => {
+    mockUser = null;
+
+    const res = await middleware(
+      new NextRequest("https://app.test/api/whatsapp/webhook", {
+        method: "POST",
+        headers: { origin: "https://evil.example" },
+      }),
+    );
+
+    expect(res.status).not.toBe(403);
+  });
+
+  it("does not block excluded cron routes", async () => {
+    mockUser = null;
+
+    const automationsGet = await middleware(
+      new NextRequest("https://app.test/api/automations/cron", {
+        method: "GET",
+        headers: { origin: "https://evil.example" },
+      }),
+    );
+    const automationsPost = await middleware(
+      new NextRequest("https://app.test/api/automations/cron", {
+        method: "POST",
+        headers: { origin: "https://evil.example" },
+      }),
+    );
+    const flowsGet = await middleware(
+      new NextRequest("https://app.test/api/flows/cron", {
+        method: "GET",
+        headers: { origin: "https://evil.example" },
+      }),
+    );
+
+    expect(automationsGet.status).not.toBe(403);
+    expect(automationsPost.status).not.toBe(403);
+    expect(flowsGet.status).not.toBe(403);
+  });
+
+  it("does not block excluded public API prefix", async () => {
+    mockUser = null;
+
+    const res = await middleware(
+      new NextRequest("https://app.test/api/v1/messages", {
+        method: "POST",
+        headers: { origin: "https://evil.example" },
+      }),
+    );
+
+    expect(res.status).not.toBe(403);
+  });
+});

@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
+import { isSameOriginRequest } from '@/lib/security/origin'
 
 export async function middleware(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request })
@@ -40,6 +41,20 @@ export async function middleware(request: NextRequest) {
       response.cookies.set(cookie)
     })
     return response
+  }
+
+  if (
+    !isSameOriginRequest({
+      method: request.method,
+      pathname: request.nextUrl.pathname,
+      expectedOrigin: request.nextUrl.origin,
+      originHeader: request.headers.get('origin'),
+      refererHeader: request.headers.get('referer'),
+    })
+  ) {
+    return withRefreshedCookies(
+      NextResponse.json({ error: 'Forbidden' }, { status: 403 }),
+    )
   }
 
   // Auth pages - redirect to dashboard if already logged in.
