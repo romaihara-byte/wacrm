@@ -5,7 +5,7 @@ import type { AiConfig } from './types'
 const h = vi.hoisted(() => ({
   loadAiConfig: vi.fn(),
   buildConversationContext: vi.fn(),
-  retrieveKnowledge: vi.fn(),
+  retrieveKnowledgeService: vi.fn(),
   generateReply: vi.fn(),
   engineSendText: vi.fn(),
   state: {
@@ -19,7 +19,9 @@ const h = vi.hoisted(() => ({
 
 vi.mock('./config', () => ({ loadAiConfig: h.loadAiConfig }))
 vi.mock('./context', () => ({ buildConversationContext: h.buildConversationContext }))
-vi.mock('./knowledge', () => ({ retrieveKnowledge: h.retrieveKnowledge }))
+vi.mock('./knowledge', () => ({
+  retrieveKnowledgeService: h.retrieveKnowledgeService,
+}))
 vi.mock('./generate', () => ({ generateReply: h.generateReply }))
 vi.mock('@/lib/flows/meta-send', () => ({ engineSendText: h.engineSendText }))
 vi.mock('./admin-client', () => ({
@@ -92,7 +94,7 @@ beforeEach(() => {
   h.state.rpcCalls = []
   h.loadAiConfig.mockResolvedValue(aiConfig())
   h.buildConversationContext.mockResolvedValue([{ role: 'user', content: 'hi' }])
-  h.retrieveKnowledge.mockResolvedValue([])
+  h.retrieveKnowledgeService.mockResolvedValue([])
   h.generateReply.mockResolvedValue({ text: 'Hello!', handoff: false })
   h.engineSendText.mockResolvedValue({ whatsapp_message_id: 'm1' })
 })
@@ -112,9 +114,13 @@ describe('dispatchInboundToAiReply — eligibility gates', () => {
   })
 
   it('grounds the reply in retrieved knowledge', async () => {
-    h.retrieveKnowledge.mockResolvedValue(['Returns accepted within 30 days.'])
+    h.retrieveKnowledgeService.mockResolvedValue(['Returns accepted within 30 days.'])
     await dispatchInboundToAiReply(ARGS)
-    expect(h.retrieveKnowledge).toHaveBeenCalled()
+    expect(h.retrieveKnowledgeService).toHaveBeenCalledWith(
+      'acct-1',
+      expect.objectContaining({ autoReplyEnabled: true }),
+      'hi',
+    )
     const systemPrompt = h.generateReply.mock.calls[0][0].systemPrompt as string
     expect(systemPrompt).toContain('Returns accepted within 30 days.')
   })
