@@ -2,6 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import type { AiConfig } from './types'
 import { chunkText } from './chunk'
 import { embedTexts, toVectorLiteral } from './embeddings'
+import { supabaseAdmin } from './admin-client'
 
 // ============================================================
 // Knowledge base: ingest (chunk + optionally embed) and hybrid
@@ -142,6 +143,76 @@ export async function retrieveKnowledge(
       }
     } catch (err) {
       console.error('[ai knowledge] lexical retrieval failed:', err)
+    }
+  }
+
+  return Array.from(picked.values()).slice(0, k)
+}
+
+/**
+ * Server-only retrieval surface for flows that do not run in a user RLS
+ * context (webhooks, internal jobs, auto-reply).
+ *
+ * The tenant boundary here is the trusted server-side derivation of
+ * `accountId`; callers must never source it directly from untrusted
+ * request body/query input.
+ */
+export async function retrieveKnowledgeService(
+  accountId: string,
+  config: Pick<AiConfig, 'embeddingsApiKey'>,
+  queryText: string,
+  k = 5,
+): Promise<string[]> {
+  const query = queryText.trim()
+  if (!query || k <= 0) return []
+
+  const db = supabaseAdmin()
+
+  try {
+    const { count, error } = await db
+      .from('ai_knowledge_chunks')
+      .select('id', { count: 'exact', head: true })
+      .eq('account_id', accountId)
+    if (error || !count) return []
+  } catch {
+    return []
+  }
+
+  const picked = new Map<string, string>()
+
+  if (config.embeddingsApiKey) {
+    try {
+      const [queryEmbedding] = await embedTexts(config.embeddingsApiKey, [query])
+      if (queryEmbedding) {
+        const { data, error } = await db.rpc('match_ai_knowledge_semantic_service', {
+          p_account_id: accountId,
+          p_query_embedding: toVectorLiteral(queryEmbedding),
+          p_match_count: k,
+        })
+        if (!error && Array.isArray(data)) {
+          for (const row of data as MatchRow[]) picked.set(row.id, row.content)
+        }
+      }
+    } catch (err) {
+      console.error('[ai knowledge] semantic service retrieval failed, falling back to FTS:', err)
+    }
+  }
+
+  if (picked.size < k) {
+    try {
+      const { data, error } = await db.rpc('match_ai_knowledge_fts_service', {
+        p_account_id: accountId,
+        p_query: query,
+        p_match_count: k,
+      })
+      if (!error && Array.isArray(data)) {
+        for (const row of data as MatchRow[]) {
+          if (picked.size >= k) break
+          if (!picked.has(row.id)) picked.set(row.id, row.content)
+        }
+      }
+    } catch (err) {
+      console.error('[ai knowledge] lexical service retrieval failed:', err)
     }
   }
 

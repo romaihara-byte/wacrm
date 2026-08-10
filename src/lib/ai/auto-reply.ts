@@ -1,7 +1,7 @@
 import { supabaseAdmin } from './admin-client'
 import { loadAiConfig } from './config'
 import { buildConversationContext } from './context'
-import { retrieveKnowledge } from './knowledge'
+import { retrieveKnowledgeService } from './knowledge'
 import { generateReply } from './generate'
 import { buildSystemPrompt } from './defaults'
 import { latestUserMessage } from './query'
@@ -80,8 +80,7 @@ export async function dispatchInboundToAiReply(
     if (messages.length === 0) return
 
     // Ground the reply in the account's knowledge base (best-effort).
-    const knowledge = await retrieveKnowledge(
-      db,
+    const knowledge = await retrieveKnowledgeService(
       accountId,
       config,
       latestUserMessage(messages),
