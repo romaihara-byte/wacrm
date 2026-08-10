@@ -7,7 +7,7 @@ import { NextRequest } from "next/server";
 // `refreshedCookies` — cookies Supabase writes via setAll() during getUser(),
 //                      i.e. the freshly *rotated* auth token. The whole point
 //                      of the test is that these must survive onto whatever
-//                      response the middleware returns — including redirects.
+//                      response the proxy returns — including redirects.
 let mockUser: { id: string } | null = null;
 let refreshedCookies: Array<{
   name: string;
@@ -36,7 +36,7 @@ vi.mock("@supabase/ssr", () => ({
 }));
 
 // Imported after the mock is registered.
-const { middleware } = await import("./middleware");
+const { proxy } = await import("./proxy");
 
 beforeEach(() => {
   process.env.NEXT_PUBLIC_SUPABASE_URL = "https://test.supabase.co";
@@ -53,12 +53,12 @@ const ROTATED = {
   options: { path: "/", httpOnly: true },
 };
 
-describe("middleware — refreshed auth cookies survive redirects", () => {
+describe("proxy — refreshed auth cookies survive redirects", () => {
   it("carries the rotated token when redirecting a signed-in user off /login", async () => {
     mockUser = { id: "user-1" };
     refreshedCookies = [ROTATED];
 
-    const res = await middleware(
+    const res = await proxy(
       new NextRequest("https://app.test/login"),
     );
 
@@ -77,7 +77,7 @@ describe("middleware — refreshed auth cookies survive redirects", () => {
     // clearing a dead session); those must not be dropped on the redirect.
     refreshedCookies = [{ ...ROTATED, value: "cleared" }];
 
-    const res = await middleware(
+    const res = await proxy(
       new NextRequest("https://app.test/dashboard"),
     );
 
@@ -90,7 +90,7 @@ describe("middleware — refreshed auth cookies survive redirects", () => {
     mockUser = { id: "user-1" };
     refreshedCookies = [ROTATED];
 
-    const res = await middleware(
+    const res = await proxy(
       new NextRequest("https://app.test/login?invite=abc123"),
     );
 
@@ -102,7 +102,7 @@ describe("middleware — refreshed auth cookies survive redirects", () => {
     mockUser = { id: "user-1" };
     refreshedCookies = [ROTATED];
 
-    const res = await middleware(
+    const res = await proxy(
       new NextRequest("https://app.test/dashboard"),
     );
 
@@ -112,11 +112,11 @@ describe("middleware — refreshed auth cookies survive redirects", () => {
   });
 });
 
-describe("middleware — same-origin API protection", () => {
+describe("proxy — same-origin API protection", () => {
   it("blocks cross-origin POST to a session API route", async () => {
     mockUser = { id: "user-1" };
 
-    const res = await middleware(
+    const res = await proxy(
       new NextRequest("https://app.test/api/account", {
         method: "POST",
         headers: { origin: "https://evil.example" },
@@ -131,7 +131,7 @@ describe("middleware — same-origin API protection", () => {
   it("allows same-origin POST via Origin", async () => {
     mockUser = { id: "user-1" };
 
-    const res = await middleware(
+    const res = await proxy(
       new NextRequest("https://app.test/api/account", {
         method: "POST",
         headers: { origin: "https://app.test" },
@@ -144,7 +144,7 @@ describe("middleware — same-origin API protection", () => {
   it("allows same-origin POST via Referer fallback", async () => {
     mockUser = { id: "user-1" };
 
-    const res = await middleware(
+    const res = await proxy(
       new NextRequest("https://app.test/api/account", {
         method: "POST",
         headers: { referer: "https://app.test/dashboard" },
@@ -157,7 +157,7 @@ describe("middleware — same-origin API protection", () => {
   it("blocks unsafe session API request when Origin and Referer are missing", async () => {
     mockUser = { id: "user-1" };
 
-    const res = await middleware(
+    const res = await proxy(
       new NextRequest("https://app.test/api/account", {
         method: "POST",
       }),
@@ -169,7 +169,7 @@ describe("middleware — same-origin API protection", () => {
   it("does not block excluded webhook route", async () => {
     mockUser = null;
 
-    const res = await middleware(
+    const res = await proxy(
       new NextRequest("https://app.test/api/whatsapp/webhook", {
         method: "POST",
         headers: { origin: "https://evil.example" },
@@ -182,19 +182,19 @@ describe("middleware — same-origin API protection", () => {
   it("does not block excluded cron routes", async () => {
     mockUser = null;
 
-    const automationsGet = await middleware(
+    const automationsGet = await proxy(
       new NextRequest("https://app.test/api/automations/cron", {
         method: "GET",
         headers: { origin: "https://evil.example" },
       }),
     );
-    const automationsPost = await middleware(
+    const automationsPost = await proxy(
       new NextRequest("https://app.test/api/automations/cron", {
         method: "POST",
         headers: { origin: "https://evil.example" },
       }),
     );
-    const flowsGet = await middleware(
+    const flowsGet = await proxy(
       new NextRequest("https://app.test/api/flows/cron", {
         method: "GET",
         headers: { origin: "https://evil.example" },
@@ -209,7 +209,7 @@ describe("middleware — same-origin API protection", () => {
   it("does not block excluded public API prefix", async () => {
     mockUser = null;
 
-    const res = await middleware(
+    const res = await proxy(
       new NextRequest("https://app.test/api/v1/messages", {
         method: "POST",
         headers: { origin: "https://evil.example" },
