@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 
-const DEFAULT_TAG_COLOR = '#3b82f6';
+const DEFAULT_TAG_COLOR = '#1E56B3';
 
 export interface ResolveImportTagsResult {
   /** Lowercase tag name → tag id. */

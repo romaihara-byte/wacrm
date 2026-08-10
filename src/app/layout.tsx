@@ -21,16 +21,18 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: {
-    default: "wacrm",
-    template: "%s — wacrm",
+    default: "Romeva CRM",
+    template: "%s | Romeva CRM",
   },
-  description: "Self-hostable CRM template for WhatsApp.",
+  description: "Plataforma de atendimento, vendas e automação com WhatsApp e inteligência artificial.",
   robots: {
     index: false,
     follow: false,
   },
   icons: {
-    icon: [{ url: "/icon" }],
+    icon: [{ url: "/brand/romeva-symbol.png" }],
+    shortcut: [{ url: "/brand/romeva-symbol.png" }],
+    apple: [{ url: "/brand/romeva-symbol.png" }],
   },
   formatDetection: {
     email: false,
@@ -83,7 +85,7 @@ export default function RootLayout({
 }>) {
   return (
     <html
-      lang="en"
+      lang="pt-BR"
       data-theme={DEFAULT_THEME}
       data-mode={DEFAULT_MODE}
       className={`${inter.variable} h-full antialiased`}

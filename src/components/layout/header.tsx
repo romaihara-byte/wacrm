@@ -19,14 +19,14 @@ import {
 import { ModeToggle } from "@/components/layout/mode-toggle";
 
 const pageTitles: Record<string, string> = {
-  "/dashboard": "Dashboard",
-  "/inbox": "Inbox",
-  "/notifications": "Notifications",
-  "/contacts": "Contacts",
-  "/pipelines": "Pipelines",
-  "/broadcasts": "Broadcasts",
-  "/automations": "Automations",
-  "/settings": "Settings",
+  "/dashboard": "Painel",
+  "/inbox": "Caixa de entrada",
+  "/notifications": "Notificações",
+  "/contacts": "Contatos",
+  "/pipelines": "Funis",
+  "/broadcasts": "Campanhas",
+  "/automations": "Automações",
+  "/settings": "Configurações",
 };
 
 function getPageTitle(pathname: string): string {
@@ -34,7 +34,7 @@ function getPageTitle(pathname: string): string {
   const match = Object.entries(pageTitles).find(([path]) =>
     pathname.startsWith(path),
   );
-  return match ? match[1] : "Dashboard";
+  return match ? match[1] : "Painel";
 }
 
 interface HeaderProps {
@@ -60,7 +60,7 @@ export function Header({ onOpenSidebar }: HeaderProps) {
         <button
           type="button"
           onClick={onOpenSidebar}
-          aria-label="Open menu"
+          aria-label="Abrir menu"
           className="flex h-10 w-10 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground lg:hidden"
         >
           <Menu className="h-5 w-5" />
@@ -116,7 +116,7 @@ export function Header({ onOpenSidebar }: HeaderProps) {
             }
           >
             <User className="size-4" />
-            Profile
+            Perfil
           </DropdownMenuItem>
           <DropdownMenuItem
             render={
@@ -127,7 +127,7 @@ export function Header({ onOpenSidebar }: HeaderProps) {
             }
           >
             <SettingsIcon className="size-4" />
-            Settings
+            Configurações
           </DropdownMenuItem>
           <DropdownMenuSeparator className="bg-border" />
           <DropdownMenuItem
@@ -135,7 +135,7 @@ export function Header({ onOpenSidebar }: HeaderProps) {
             className="text-popover-foreground focus:bg-accent focus:text-accent-foreground"
           >
             <LogOut className="size-4" />
-            Sign out
+            Sair
           </DropdownMenuItem>
         </DropdownMenuContent>
         </DropdownMenu>

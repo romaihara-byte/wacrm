@@ -76,6 +76,7 @@ import {
 } from '@/lib/flows/edges';
 import { autoLayout, shouldAutoLayout } from '@/lib/flows/layout';
 import {
+  getNodeDisplayName,
   NODE_META,
   NodeIconChip,
   groupNodeTypesByCategory,
@@ -87,6 +88,7 @@ import {
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
@@ -194,12 +196,12 @@ function FlowNodeCard({ data, selected }: NodeProps) {
         </span>
         {isEntry && (
           <span className="border-border text-muted-foreground ml-auto rounded border px-1.5 py-0.5 text-[8.5px] font-bold tracking-[0.1em] uppercase">
-            Entry
+            Entrada
           </span>
         )}
       </div>
       <div className="text-muted-foreground mt-2 truncate font-mono text-[11px]">
-        {node.node_key}
+        {getNodeDisplayName(node.node_key)}
       </div>
       {summary && (
         <div className="text-muted-foreground mt-1 line-clamp-2 text-xs leading-relaxed">
@@ -507,7 +509,7 @@ function FlowCanvasInner() {
   if (rfNodes.length === 0) {
     return (
       <div className="text-muted-foreground flex h-full flex-col items-center justify-center gap-3 text-sm">
-        <p>No nodes yet.</p>
+        <p>Nenhum nó ainda.</p>
         <CanvasAddNodeButton />
       </div>
     );
@@ -630,7 +632,7 @@ function NodeEditSheet({
               <span style={{ color: c.text }}>{meta.label}</span>
               {isEntry && (
                 <span className="rounded bg-emerald-500/15 px-1.5 py-0.5 text-[9px] font-semibold tracking-wider text-emerald-300 uppercase">
-                  Entry
+                  Entrada
                 </span>
               )}
             </SheetTitle>
@@ -639,7 +641,7 @@ function NodeEditSheet({
             </SheetDescription>
           </div>
           <code className="bg-muted text-muted-foreground shrink-0 rounded px-1.5 py-0.5 font-mono text-[10px]">
-            {node.node_key}
+            {getNodeDisplayName(node.node_key)}
           </code>
         </SheetHeader>
 
@@ -655,7 +657,7 @@ function NodeEditSheet({
         <SheetFooter className="border-border border-t px-5 py-3 sm:flex-row sm:justify-between">
           {!isEntry ? (
             <Button variant="ghost" size="sm" onClick={onSetEntry}>
-              Set as entry
+              Definir como entrada
             </Button>
           ) : (
             <span />
@@ -667,7 +669,7 @@ function NodeEditSheet({
             className="text-red-400 hover:bg-red-500/10 hover:text-red-300"
           >
             <Trash2 className="h-3.5 w-3.5" />
-            Delete node
+            Excluir nó
           </Button>
         </SheetFooter>
       </SheetContent>
@@ -727,17 +729,17 @@ function CanvasAddNodeButton() {
     <DropdownMenu>
       <DropdownMenuTrigger
         className="bg-primary text-primary-foreground hover:bg-primary-hover inline-flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-[13px] font-medium shadow-[0_6px_20px_-8px_rgba(0,0,0,0.5)] transition-colors"
-        aria-label="Add node"
+        aria-label="Adicionar nó"
       >
         <Plus className="h-4 w-4" />
-        Add node
+        Adicionar nó
       </DropdownMenuTrigger>
       <DropdownMenuContent
         align="start"
         className="border-border bg-popover w-[268px] p-1.5"
       >
         {groupNodeTypesByCategory(ADD_NODE_TYPES).map((group, i) => (
-          <div key={group.id}>
+          <DropdownMenuGroup key={group.id}>
             {i > 0 && <DropdownMenuSeparator />}
             <DropdownMenuLabel className="text-muted-foreground px-2 py-1.5 text-[11px] font-semibold tracking-wider uppercase">
               {group.label}
@@ -767,7 +769,7 @@ function CanvasAddNodeButton() {
                 </DropdownMenuItem>
               );
             })}
-          </div>
+          </DropdownMenuGroup>
         ))}
       </DropdownMenuContent>
     </DropdownMenu>

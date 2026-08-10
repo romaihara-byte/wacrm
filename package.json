@@ -1,8 +1,8 @@
 {
-  "name": "wacrm",
+  "name": "romeva-crm",
   "version": "0.7.0",
   "private": true,
-  "description": "Self-hostable CRM template for WhatsApp built on Next.js and Supabase — shared inbox, contacts, sales pipelines, broadcasts, and no-code automations.",
+  "description": "Plataforma de atendimento, vendas e automação com WhatsApp e inteligência artificial.",
   "license": "MIT",
   "author": "Arnas Donauskas",
   "homepage": "https://github.com/ArnasDon/wacrm",

@@ -222,7 +222,7 @@ function RunCard({
   const meta = STATUS_META[run.status];
   const StatusIcon = meta.icon;
   const contactLabel =
-    run.contact?.name?.trim() || run.contact?.phone || "Unknown contact";
+    run.contact?.name?.trim() || run.contact?.phone || "Contato desconhecido";
   const duration = run.ended_at
     ? formatDistanceToNow(new Date(run.ended_at), {
         addSuffix: false,

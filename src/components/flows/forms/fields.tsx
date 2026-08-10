@@ -28,7 +28,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { NODE_META, type BuilderNode } from "../shared";
+import {
+  getNodeDisplayName,
+  NODE_META,
+  type BuilderNode,
+} from "../shared";
 
 export function TextRow({
   label,
@@ -83,7 +87,7 @@ export function NextNodeRow({
         nodes={allNodes}
         excludeKey={currentKey}
         onChange={(v) => onChange(v ?? "")}
-        placeholder="Pick a next node…"
+        placeholder="Escolha o próximo nó..."
       />
     </div>
   );
@@ -114,7 +118,7 @@ export function NodeKeySelect({
         <SelectValue placeholder={placeholder ?? "—"} />
       </SelectTrigger>
       <SelectContent>
-        <SelectItem value="__none__">— None —</SelectItem>
+        <SelectItem value="__none__">— Nenhum —</SelectItem>
         {options.map((n) => {
           const Icon = NODE_META[n.node_type].icon;
           return (
@@ -123,7 +127,7 @@ export function NodeKeySelect({
                 <Icon
                   className={cn("h-3 w-3", NODE_META[n.node_type].color)}
                 />
-                {n.node_key}
+                {getNodeDisplayName(n.node_key)}
               </span>
             </SelectItem>
           );

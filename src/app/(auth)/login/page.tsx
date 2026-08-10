@@ -2,6 +2,7 @@
 
 import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Image from "next/image";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -14,7 +15,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { MessageSquare, UsersRound } from "lucide-react";
+import { UsersRound } from "lucide-react";
 
 // `useSearchParams` opts the component out of static prerendering
 // unless it sits under a Suspense boundary. We split the form into
@@ -82,19 +83,21 @@ function LoginPageInner() {
       <Card className="w-full max-w-md border-border bg-card">
         <CardHeader className="items-center text-center">
           <div className="mb-2 flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
-            {inviteToken ? (
-              <UsersRound className="h-6 w-6 text-primary" />
-            ) : (
-              <MessageSquare className="h-6 w-6 text-primary" />
-            )}
+            <Image
+              src="/brand/romeva-symbol.png"
+              alt="Romeva"
+              width={24}
+              height={24}
+              className="object-contain"
+            />
           </div>
           <CardTitle className="text-xl text-foreground">
-            {inviteToken ? "Sign in to accept" : "Welcome back"}
+            {inviteToken ? "Entrar para aceitar" : "Bem-vindo de volta"}
           </CardTitle>
           <CardDescription className="text-muted-foreground">
             {inviteToken
-              ? "Sign in and we'll take you to the invitation."
-              : "Sign in to your account"}
+              ? "Faça login e iremos levá-lo ao convite."
+              : "Entre na sua conta"}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -112,7 +115,7 @@ function LoginPageInner() {
               <Input
                 id="email"
                 type="email"
-                placeholder="you@example.com"
+                placeholder="voce@exemplo.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -123,19 +126,19 @@ function LoginPageInner() {
             <div className="flex flex-col gap-2">
               <div className="flex items-center justify-between">
                 <Label htmlFor="password" className="text-muted-foreground">
-                  Password
+                  Senha
                 </Label>
                 <Link
                   href="/forgot-password"
                   className="text-sm text-primary hover:text-primary/80"
                 >
-                  Forgot password?
+                  Esqueceu a senha?
                 </Link>
               </div>
               <Input
                 id="password"
                 type="password"
-                placeholder="Enter your password"
+                placeholder="Digite sua senha"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
@@ -148,12 +151,12 @@ function LoginPageInner() {
               disabled={loading}
               className="mt-2 h-10 w-full bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
             >
-              {loading ? "Signing in..." : "Sign in"}
+              {loading ? "Entrando..." : "Entrar"}
             </Button>
           </form>
 
           <p className="mt-6 text-center text-sm text-muted-foreground">
-            Don&apos;t have an account?{" "}
+            Não tem uma conta?{" "}
             <Link
               href={
                 inviteToken
@@ -162,7 +165,7 @@ function LoginPageInner() {
               }
               className="text-primary hover:text-primary/80"
             >
-              Create account
+              Criar conta
             </Link>
           </p>
         </CardContent>

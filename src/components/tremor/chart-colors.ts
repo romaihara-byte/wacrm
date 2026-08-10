@@ -27,10 +27,16 @@ export const chartColors = {
     text: "text-emerald-500",
   },
   violet: {
-    bg: "bg-violet-500",
-    stroke: "stroke-violet-500",
-    fill: "fill-violet-500",
-    text: "text-violet-500",
+    bg: "bg-primary",
+    stroke: "stroke-primary",
+    fill: "fill-primary",
+    text: "text-primary",
+  },
+  primary: {
+    bg: "bg-primary",
+    stroke: "stroke-primary",
+    fill: "fill-primary",
+    text: "text-primary",
   },
   amber: {
     bg: "bg-amber-500",
