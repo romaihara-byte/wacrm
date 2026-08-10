@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { requireRole, toErrorResponse } from '@/lib/auth/account'
 import { supabaseAdmin } from '@/lib/flows/admin-client'
 import { validateFlowForActivation } from '@/lib/flows/validate'
 
@@ -23,12 +23,14 @@ export async function POST(
 ) {
   const { id } = await context.params
 
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  let accountId: string
+  let supabase: Awaited<ReturnType<typeof requireRole>>['supabase']
+  try {
+    const ctx = await requireRole('agent')
+    accountId = ctx.accountId
+    supabase = ctx.supabase
+  } catch (err) {
+    return toErrorResponse(err)
   }
 
   const body = (await request.json().catch(() => null)) as
@@ -47,6 +49,7 @@ export async function POST(
     .from('flows')
     .select('id')
     .eq('id', id)
+    .eq('account_id', accountId)
     .maybeSingle()
   if (!existing) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 })
@@ -99,6 +102,7 @@ export async function POST(
     .from('flows')
     .update({ status, updated_at: new Date().toISOString() })
     .eq('id', id)
+    .eq('account_id', accountId)
     .select()
     .maybeSingle()
   if (error) {

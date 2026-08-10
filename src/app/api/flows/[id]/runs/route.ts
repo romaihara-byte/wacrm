@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { requireRole, toErrorResponse } from '@/lib/auth/account'
 
 /**
  * GET /api/flows/[id]/runs
@@ -22,12 +22,14 @@ export async function GET(
 ) {
   const { id } = await context.params
 
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  let accountId: string
+  let supabase: Awaited<ReturnType<typeof requireRole>>['supabase']
+  try {
+    const ctx = await requireRole('viewer')
+    accountId = ctx.accountId
+    supabase = ctx.supabase
+  } catch (err) {
+    return toErrorResponse(err)
   }
 
   // Confirm flow exists + caller owns it (RLS does this) before doing
@@ -36,6 +38,7 @@ export async function GET(
     .from('flows')
     .select('id, name')
     .eq('id', id)
+    .eq('account_id', accountId)
     .maybeSingle()
   if (!flow) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 })

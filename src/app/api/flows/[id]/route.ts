@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { requireRole, toErrorResponse } from '@/lib/auth/account'
 import { supabaseAdmin } from '@/lib/flows/admin-client'
 
 /**
@@ -17,47 +17,28 @@ import { supabaseAdmin } from '@/lib/flows/admin-client'
  * gone; the "Beta" label in the UI is the only remaining signal.
  */
 
-async function requireOwnership(
-  flowId: string,
-): Promise<
-  | {
-      ok: true
-      userId: string
-      supabase: Awaited<ReturnType<typeof createClient>>
-    }
-  | { ok: false; status: number; body: { error: string } }
-> {
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) {
-    return { ok: false, status: 401, body: { error: 'Unauthorized' } }
-  }
-  // RLS scopes this to the caller — a flow owned by another user
-  // returns null (404 below).
-  const { data: flow } = await supabase
-    .from('flows')
-    .select('id')
-    .eq('id', flowId)
-    .maybeSingle()
-  if (!flow) {
-    return { ok: false, status: 404, body: { error: 'Not found' } }
-  }
-  return { ok: true, userId: user.id, supabase }
-}
-
 export async function GET(
   _request: Request,
   context: { params: Promise<{ id: string }> },
 ) {
   const { id } = await context.params
-  const guard = await requireOwnership(id)
-  if (!guard.ok) return NextResponse.json(guard.body, { status: guard.status })
-  const { supabase } = guard
+  let accountId: string
+  let supabase: Awaited<ReturnType<typeof requireRole>>['supabase']
+  try {
+    const ctx = await requireRole('viewer')
+    accountId = ctx.accountId
+    supabase = ctx.supabase
+  } catch (err) {
+    return toErrorResponse(err)
+  }
 
   const [{ data: flow }, { data: nodes }] = await Promise.all([
-    supabase.from('flows').select('*').eq('id', id).maybeSingle(),
+    supabase
+      .from('flows')
+      .select('*')
+      .eq('id', id)
+      .eq('account_id', accountId)
+      .maybeSingle(),
     supabase
       .from('flow_nodes')
       .select('*')
@@ -91,8 +72,25 @@ export async function PUT(
   context: { params: Promise<{ id: string }> },
 ) {
   const { id } = await context.params
-  const guard = await requireOwnership(id)
-  if (!guard.ok) return NextResponse.json(guard.body, { status: guard.status })
+  let accountId: string
+  let supabase: Awaited<ReturnType<typeof requireRole>>['supabase']
+  try {
+    const ctx = await requireRole('agent')
+    accountId = ctx.accountId
+    supabase = ctx.supabase
+  } catch (err) {
+    return toErrorResponse(err)
+  }
+
+  const { data: existing } = await supabase
+    .from('flows')
+    .select('id')
+    .eq('id', id)
+    .eq('account_id', accountId)
+    .maybeSingle()
+  if (!existing) {
+    return NextResponse.json({ error: 'Not found' }, { status: 404 })
+  }
 
   const body = (await request.json().catch(() => null)) as PutBody | null
   if (!body) {
@@ -128,6 +126,7 @@ export async function PUT(
     .from('flows')
     .update(flowPatch)
     .eq('id', id)
+    .eq('account_id', accountId)
   if (updErr) {
     return NextResponse.json({ error: updErr.message }, { status: 500 })
   }
@@ -177,15 +176,36 @@ export async function DELETE(
   context: { params: Promise<{ id: string }> },
 ) {
   const { id } = await context.params
-  const guard = await requireOwnership(id)
-  if (!guard.ok) return NextResponse.json(guard.body, { status: guard.status })
+  let accountId: string
+  let supabase: Awaited<ReturnType<typeof requireRole>>['supabase']
+  try {
+    const ctx = await requireRole('agent')
+    accountId = ctx.accountId
+    supabase = ctx.supabase
+  } catch (err) {
+    return toErrorResponse(err)
+  }
+
+  const { data: existing } = await supabase
+    .from('flows')
+    .select('id')
+    .eq('id', id)
+    .eq('account_id', accountId)
+    .maybeSingle()
+  if (!existing) {
+    return NextResponse.json({ error: 'Not found' }, { status: 404 })
+  }
 
   // CASCADE on flow_nodes / flow_runs / flow_run_events handles the
   // children. Active runs end abruptly — there's no graceful "drain"
   // mechanism in v1, but that's intentional: deleting a flow is a
   // deliberate destructive action and the partial unique index will
   // free up the contact for new triggers immediately.
-  const { error } = await supabaseAdmin().from('flows').delete().eq('id', id)
+  const { error } = await supabaseAdmin()
+    .from('flows')
+    .delete()
+    .eq('id', id)
+    .eq('account_id', accountId)
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
